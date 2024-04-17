@@ -103,7 +103,7 @@ func (b *remoteChartBuilder) Build(ctx context.Context, ref Reference, p string,
 	}
 	chart.Metadata.Version = result.Version
 
-	mergedValues, err := mergeChartValues(chart, opts.ValuesFiles)
+	mergedValues, err := mergeChartValues(chart, opts.ValuesFiles, opts.IgnoreMissingValuesFiles)
 	if err != nil {
 		err = fmt.Errorf("failed to merge chart values: %w", err)
 		return result, &BuildError{Reason: ErrValuesFilesMerge, Err: err}
@@ -227,7 +227,7 @@ func setBuildMetaData(version, versionMetadata string) (*semver.Version, error) 
 
 // mergeChartValues merges the given chart.Chart Files paths into a single "values.yaml" map.
 // It returns the merge result, or an error.
-func mergeChartValues(chart *helmchart.Chart, paths []string) (map[string]interface{}, error) {
+func mergeChartValues(chart *helmchart.Chart, paths []string, ignoreMissing bool) (map[string]interface{}, error) {
 	mergedValues := make(map[string]interface{})
 	for _, p := range paths {
 		cfn := filepath.Clean(p)
@@ -243,6 +243,9 @@ func mergeChartValues(chart *helmchart.Chart, paths []string) (map[string]interf
 			}
 		}
 		if b == nil {
+			if ignoreMissing {
+				continue
+			}
 			return nil, fmt.Errorf("no values file found at path '%s'", p)
 		}
 		values := make(map[string]interface{})

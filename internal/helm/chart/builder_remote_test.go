@@ -443,11 +443,12 @@ entries:
 
 func Test_mergeChartValues(t *testing.T) {
 	tests := []struct {
-		name    string
-		chart   *helmchart.Chart
-		paths   []string
-		want    map[string]interface{}
-		wantErr string
+		name          string
+		chart         *helmchart.Chart
+		paths         []string
+		ignoreMissing bool
+		want          map[string]interface{}
+		wantErr       string
 	}{
 		{
 			name: "merges values",
@@ -496,12 +497,45 @@ func Test_mergeChartValues(t *testing.T) {
 			paths:   []string{"a.yaml"},
 			wantErr: "no values file found at path 'a.yaml'",
 		},
+		{
+			name: "merges values ignoring file missing",
+			chart: &helmchart.Chart{
+				Files: []*helmchart.File{
+					{Name: "a.yaml", Data: []byte("a: b")},
+				},
+			},
+			paths:         []string{"a.yaml", "b.yaml"},
+			ignoreMissing: true,
+			want: map[string]interface{}{
+				"a": "b",
+			},
+		},
+		{
+			name:          "merges values ignoring all missing",
+			chart:         &helmchart.Chart{},
+			paths:         []string{"a.yaml"},
+			ignoreMissing: true,
+			want:          map[string]interface{}{},
+		},
+		{
+			name: "uses chart values ignoring missing file",
+			chart: &helmchart.Chart{
+				Values: map[string]interface{}{
+					"a": "b",
+				},
+			},
+			paths:         []string{chartutil.ValuesfileName, "c.yaml"},
+			ignoreMissing: true,
+			want: map[string]interface{}{
+				"a": "b",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			got, err := mergeChartValues(tt.chart, tt.paths)
+			got, err := mergeChartValues(tt.chart, tt.paths, tt.ignoreMissing)
 			if tt.wantErr != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tt.wantErr))

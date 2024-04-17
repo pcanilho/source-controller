@@ -281,11 +281,12 @@ func TestLocalBuilder_Build_CachedChart(t *testing.T) {
 
 func Test_mergeFileValues(t *testing.T) {
 	tests := []struct {
-		name    string
-		files   []*helmchart.File
-		paths   []string
-		want    map[string]interface{}
-		wantErr string
+		name          string
+		files         []*helmchart.File
+		paths         []string
+		ignoreMissing bool
+		want          map[string]interface{}
+		wantErr       string
 	}{
 		{
 			name: "merges values from files",
@@ -318,6 +319,23 @@ func Test_mergeFileValues(t *testing.T) {
 			paths:   []string{"a.yaml"},
 			wantErr: "no values file found at path '/a.yaml'",
 		},
+		{
+			name: "ignore missing files",
+			files: []*helmchart.File{
+				{Name: "a.yaml", Data: []byte("a: b")},
+			},
+			paths:         []string{"a.yaml", "b.yaml"},
+			ignoreMissing: true,
+			want: map[string]interface{}{
+				"a": "b",
+			},
+		},
+		{
+			name:          "all files missing",
+			paths:         []string{"a.yaml"},
+			ignoreMissing: true,
+			want:          map[string]interface{}{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -329,7 +347,7 @@ func Test_mergeFileValues(t *testing.T) {
 				g.Expect(os.WriteFile(filepath.Join(baseDir, f.Name), f.Data, 0o640)).To(Succeed())
 			}
 
-			got, err := mergeFileValues(baseDir, tt.paths)
+			got, err := mergeFileValues(baseDir, tt.paths, tt.ignoreMissing)
 			if tt.wantErr != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tt.wantErr))
