@@ -447,7 +447,8 @@ func Test_mergeChartValues(t *testing.T) {
 		chart         *helmchart.Chart
 		paths         []string
 		ignoreMissing bool
-		want          map[string]interface{}
+		wantValues    map[string]interface{}
+		wantFiles     []string
 		wantErr       string
 	}{
 		{
@@ -460,10 +461,11 @@ func Test_mergeChartValues(t *testing.T) {
 				},
 			},
 			paths: []string{"a.yaml", "b.yaml", "c.yaml"},
-			want: map[string]interface{}{
+			wantValues: map[string]interface{}{
 				"a": "b",
 				"b": "d",
 			},
+			wantFiles: []string{"a.yaml", "b.yaml", "c.yaml"},
 		},
 		{
 			name: "uses chart values",
@@ -476,10 +478,11 @@ func Test_mergeChartValues(t *testing.T) {
 				},
 			},
 			paths: []string{chartutil.ValuesfileName, "c.yaml"},
-			want: map[string]interface{}{
+			wantValues: map[string]interface{}{
 				"a": "b",
 				"b": "d",
 			},
+			wantFiles: []string{chartutil.ValuesfileName, "c.yaml"},
 		},
 		{
 			name: "unmarshal error",
@@ -506,16 +509,18 @@ func Test_mergeChartValues(t *testing.T) {
 			},
 			paths:         []string{"a.yaml", "b.yaml"},
 			ignoreMissing: true,
-			want: map[string]interface{}{
+			wantValues: map[string]interface{}{
 				"a": "b",
 			},
+			wantFiles: []string{"a.yaml"},
 		},
 		{
 			name:          "merges values ignoring all missing",
 			chart:         &helmchart.Chart{},
 			paths:         []string{"a.yaml"},
 			ignoreMissing: true,
-			want:          map[string]interface{}{},
+			wantValues:    map[string]interface{}{},
+			wantFiles:     []string{},
 		},
 		{
 			name: "uses chart values ignoring missing file",
@@ -526,25 +531,28 @@ func Test_mergeChartValues(t *testing.T) {
 			},
 			paths:         []string{chartutil.ValuesfileName, "c.yaml"},
 			ignoreMissing: true,
-			want: map[string]interface{}{
+			wantValues: map[string]interface{}{
 				"a": "b",
 			},
+			wantFiles: []string{chartutil.ValuesfileName},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			got, err := mergeChartValues(tt.chart, tt.paths, tt.ignoreMissing)
+			gotValues, gotFiles, err := mergeChartValues(tt.chart, tt.paths, tt.ignoreMissing)
 			if tt.wantErr != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tt.wantErr))
-				g.Expect(got).To(BeNil())
+				g.Expect(gotValues).To(BeNil())
+				g.Expect(gotFiles).To(BeNil())
 				return
 			}
 
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(got).To(Equal(tt.want))
+			g.Expect(gotValues).To(Equal(tt.wantValues))
+			g.Expect(gotFiles).To(Equal(tt.wantFiles))
 		})
 	}
 }
