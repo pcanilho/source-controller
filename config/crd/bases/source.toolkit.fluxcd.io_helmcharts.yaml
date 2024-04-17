@@ -94,8 +94,9 @@ spec:
                   SourceRef.
                 type: string
               ignoreMissingValuesFiles:
-                description: Whether to silently ignore missing values files rather
-                  than failing.
+                description: |-
+                  IgnoreMissingValuesFiles controls whether to silently ignore missing values
+                  files rather than failing.
                 type: boolean
               interval:
                 description: The interval at which to check the Source for updates.
@@ -368,8 +369,9 @@ spec:
                   SourceRef.
                 type: string
               ignoreMissingValuesFiles:
-                description: Whether to silently ignore missing values files rather
-                  than failing.
+                description: |-
+                  IgnoreMissingValuesFiles controls whether to silently ignore missing values
+                  files rather than failing.
                 type: boolean
               interval:
                 description: |-
