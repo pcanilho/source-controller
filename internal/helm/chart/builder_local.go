@@ -142,7 +142,7 @@ func (b *localChartBuilder) Build(ctx context.Context, ref Reference, p string, 
 	// Merge chart values, if instructed
 	var mergedValues map[string]interface{}
 	if len(opts.GetValuesFiles()) > 0 {
-		if mergedValues, err = mergeFileValues(localRef.WorkDir, opts.ValuesFiles); err != nil {
+		if mergedValues, err = mergeFileValues(localRef.WorkDir, opts.ValuesFiles, opts.IgnoreMissingValuesFiles); err != nil {
 			return result, &BuildError{Reason: ErrValuesFilesMerge, Err: err}
 		}
 	}
@@ -189,14 +189,18 @@ func (b *localChartBuilder) Build(ctx context.Context, ref Reference, p string, 
 // mergeFileValues merges the given value file paths into a single "values.yaml" map.
 // The provided (relative) paths may not traverse outside baseDir. It returns the merge
 // result, or an error.
-func mergeFileValues(baseDir string, paths []string) (map[string]interface{}, error) {
+func mergeFileValues(baseDir string, paths []string, ignoreMissing bool) (map[string]interface{}, error) {
 	mergedValues := make(map[string]interface{})
 	for _, p := range paths {
 		secureP, err := securejoin.SecureJoin(baseDir, p)
 		if err != nil {
 			return nil, err
 		}
-		if f, err := os.Stat(secureP); err != nil || !f.Mode().IsRegular() {
+		f, err := os.Stat(secureP)
+		if err != nil && ignoreMissing && os.IsNotExist(err) {
+			continue
+		}
+		if err != nil || !f.Mode().IsRegular() {
 			return nil, fmt.Errorf("no values file found at path '%s' (reference '%s')",
 				strings.TrimPrefix(secureP, baseDir), p)
 		}
