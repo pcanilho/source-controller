@@ -285,7 +285,7 @@ func Test_mergeFileValues(t *testing.T) {
 		files         []*helmchart.File
 		paths         []string
 		ignoreMissing bool
-		wantValues    map[string]interface{}
+		wantValues    map[string]any
 		wantFiles     []string
 		wantErr       string
 	}{
@@ -297,7 +297,7 @@ func Test_mergeFileValues(t *testing.T) {
 				{Name: "c.yaml", Data: []byte("b: d")},
 			},
 			paths: []string{"a.yaml", "b.yaml", "c.yaml"},
-			wantValues: map[string]interface{}{
+			wantValues: map[string]any{
 				"a": "b",
 				"b": "d",
 			},
@@ -328,7 +328,7 @@ func Test_mergeFileValues(t *testing.T) {
 			},
 			paths:         []string{"a.yaml", "b.yaml"},
 			ignoreMissing: true,
-			wantValues: map[string]interface{}{
+			wantValues: map[string]any{
 				"a": "b",
 			},
 			wantFiles: []string{"a.yaml"},
@@ -337,7 +337,7 @@ func Test_mergeFileValues(t *testing.T) {
 			name:          "all files missing",
 			paths:         []string{"a.yaml"},
 			ignoreMissing: true,
-			wantValues:    map[string]interface{}{},
+			wantValues:    map[string]any{},
 			wantFiles:     []string{},
 		},
 	}
@@ -351,7 +351,8 @@ func Test_mergeFileValues(t *testing.T) {
 				g.Expect(os.WriteFile(filepath.Join(baseDir, f.Name), f.Data, 0o640)).To(Succeed())
 			}
 
-			gotValues, gotFiles, err := mergeFileValues(baseDir, tt.paths, tt.ignoreMissing)
+			var opts BuildOptions
+			gotValues, gotFiles, err := mergeFileValues(&opts, baseDir, tt.paths, tt.ignoreMissing)
 			if tt.wantErr != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tt.wantErr))
@@ -363,6 +364,7 @@ func Test_mergeFileValues(t *testing.T) {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(gotValues).To(Equal(tt.wantValues))
 			g.Expect(gotFiles).To(Equal(tt.wantFiles))
+			g.Expect(opts.FoundValueFiles).To(Equal(tt.wantFiles))
 		})
 	}
 }

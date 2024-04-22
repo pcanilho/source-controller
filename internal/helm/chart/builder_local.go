@@ -145,7 +145,7 @@ func (b *localChartBuilder) Build(ctx context.Context, ref Reference, p string, 
 		valuesFiles  []string
 	)
 	if len(opts.GetValuesFiles()) > 0 {
-		if mergedValues, valuesFiles, err = mergeFileValues(localRef.WorkDir, opts.ValuesFiles, opts.IgnoreMissingValuesFiles); err != nil {
+		if mergedValues, valuesFiles, err = mergeFileValues(&opts, localRef.WorkDir, opts.ValuesFiles, opts.IgnoreMissingValuesFiles); err != nil {
 			return result, &BuildError{Reason: ErrValuesFilesMerge, Err: err}
 		}
 	}
@@ -194,8 +194,8 @@ func (b *localChartBuilder) Build(ctx context.Context, ref Reference, p string, 
 // file is considered an error. If ignoreMissing is set true, missing files are ignored.
 // It returns the merge result and the list of files that contributed to that result,
 // or an error.
-func mergeFileValues(baseDir string, paths []string, ignoreMissing bool) (map[string]interface{}, []string, error) {
-	mergedValues := make(map[string]interface{})
+func mergeFileValues(buildOptions *BuildOptions, baseDir string, paths []string, ignoreMissing bool) (map[string]interface{}, []string, error) {
+	mergedValues := make(map[string]any)
 	valuesFiles := make([]string, 0, len(paths))
 	for _, p := range paths {
 		secureP, err := securejoin.SecureJoin(baseDir, p)
@@ -225,6 +225,7 @@ func mergeFileValues(baseDir string, paths []string, ignoreMissing bool) (map[st
 		mergedValues = transform.MergeMaps(mergedValues, values)
 		valuesFiles = append(valuesFiles, p)
 	}
+	buildOptions.FoundValueFiles = valuesFiles
 	return mergedValues, valuesFiles, nil
 }
 

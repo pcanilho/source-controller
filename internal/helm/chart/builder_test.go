@@ -152,7 +152,7 @@ func TestBuildOptions_GetValuesFiles(t *testing.T) {
 		{
 			name:        "Values files",
 			valuesFiles: []string{chartutil.ValuesfileName, "foo.yaml"},
-			want:        []string{chartutil.ValuesfileName, "foo.yaml"},
+			want:        []string{"foo.yaml"},
 		},
 	}
 	for _, tt := range tests {

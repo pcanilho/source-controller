@@ -109,6 +109,9 @@ type BuildOptions struct {
 	ValuesFiles []string
 	// IgnoreMissingValuesFiles controls whether to silently ignore missing values files rather than failing.
 	IgnoreMissingValuesFiles bool
+	// FoundValueFiles is contextually populated when the IgnoreMissingValuesFiles is set to true.
+	// It will otherwise default to ValuesFiles
+	FoundValueFiles []string
 	// CachedChart can be set to the absolute path of a chart stored on
 	// the local filesystem, and is used for simple validation by metadata
 	// comparisons.
@@ -120,13 +123,19 @@ type BuildOptions struct {
 	Verify bool
 }
 
-// GetValuesFiles returns BuildOptions.ValuesFiles, except if it equals
-// "values.yaml", which returns nil.
+// GetValuesFiles returns BuildOptions.ValuesFiles, except if
+// BuildOptions.FoundValueFiles has been already calculated.
+// If only the default "values.yaml" is set, it returns nil.
 func (o BuildOptions) GetValuesFiles() []string {
-	if len(o.ValuesFiles) == 1 && filepath.Clean(o.ValuesFiles[0]) == filepath.Clean(chartutil.ValuesfileName) {
+	out := o.ValuesFiles
+	if len(out) == 1 && filepath.Clean(out[0]) == filepath.Clean(chartutil.ValuesfileName) {
 		return nil
 	}
-	return o.ValuesFiles
+	// Use the contextually populated FoundValueFiles if set.
+	if o.FoundValueFiles != nil {
+		out = o.FoundValueFiles
+	}
+	return out
 }
 
 // Build contains the (partial) Builder.Build result, including specific
